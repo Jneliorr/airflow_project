@@ -10,6 +10,7 @@ import pandas as pd
 from datetime import datetime
 import zipfile
 import numpy as np
+from airflow.operators.bash import BashOperator
 
 params = {
         "Usuario": Param(
@@ -160,13 +161,13 @@ def cinema2026():
         nome_arquivo_saida = os.path.join(caminho_saida, "lancamentos.csv")
         lancamento.to_csv(nome_arquivo_saida, sep=';',index=False, encoding='utf-8')
 
-    @task
-    def upload_to_postgres(caminho, table_name, database, user, password):
-        # engine = create_engine(f'postgresql://{user}:{password}@{host}:{port}/{database}')
-        engine = create_engine(f"postgresql+psycopg2://{user}:{password}@172.17.0.2:5432/{database}")
-        print(engine)
-        df = pd.read_csv(caminho, sep=';')
-        df.to_sql(table_name, engine, index=False, if_exists='replace')
+    # @task
+    # def upload_to_postgres(caminho, table_name, database, user, password):
+    #     # engine = create_engine(f'postgresql://{user}:{password}@{host}:{port}/{database}')
+    #     engine = create_engine(f"postgresql+psycopg2://{user}:{password}@172.17.0.2:5432/{database}")
+    #     print(engine)
+    #     df = pd.read_csv(caminho, sep=';')
+    #     df.to_sql(table_name, engine, index=False, if_exists='replace')
 
 
 #### FIM DA FUNÇÃO / CHAMADAS DAS FUNÇÕES PARA CADA TAREFA ###
@@ -195,10 +196,30 @@ def cinema2026():
     distribuidoras = lancamentos("/opt/airflow/cinema2026/data/raw/unzip/distribuidoras/lancamentos-comerciais-por-distribuidoras.csv",
          "/opt/airflow/cinema2026/data/processados")
     
-    upload = upload_to_postgres(caminho = "/opt/airflow/cinema2026/data/processados/bilheteria_diaria_tratada.csv", table_name = "{{ params.table_name }}", database = "{{ params.database }}", user = "{{ params.user }}", password = "{{ params.password }}")
+    mover_zips = BashOperator(
+    task_id='mover_zips',
+    bash_command=f'mv /opt/airflow/cinema2026/data/raw/zip/bilheteria-diaria-obras-por-exibidoras-csv.zip /opt/airflow/cinema2026/data/raw/arquivo/zip/bilheteria-diaria-obras-por-exibidoras/ '
+    )
+    mover_read_bilheteria = BashOperator(
+    task_id='mover_read_bilheteria',
+    bash_command=f'mv /opt/airflow/cinema2026/data/raw/unzip/bilheteria-diaria-obras-por-exibidoras-csv/*.csv /opt/airflow/cinema2026/data/raw/arquivo/unzip/bilheteria-diaria-obras-por-exibidoras-csv/'
+    )
+
+    mover_read_distribuidoras = BashOperator(
+    task_id='mover_read_distribuidoras',
+    bash_command=f'mv /opt/airflow/cinema2026/data/raw/unzip/distribuidoras/*.csv /opt/airflow/cinema2026/data/raw/arquivo/unzip/distribuidoras/'
+    )
+    mover_salas_exibicao = BashOperator(
+    task_id='mover_salas_exibicao',
+    bash_command=f'mv /opt/airflow/cinema2026/data/raw/unzip/salas-de-exibicao/*.csv /opt/airflow/cinema2026/data/raw/arquivo/unzip/salas-de-exibicao/ '
+    )
+
+    # upload = upload_to_postgres(caminho = "/opt/airflow/cinema2026/data/processados/bilheteria_diaria_tratada.csv", table_name = "{{ params.table_name }}", database = "{{ params.database }}", user = "{{ params.user }}", password = "{{ params.password }}")
+    
+    
     start = EmptyOperator(task_id = 'start')
     end = EmptyOperator(task_id = 'end')
 
-    start >> unzip >> etl >> cinemas >> filmes >> distribuidoras >> upload >> end
+    start >> unzip >> etl >> cinemas >> filmes >> distribuidoras >> [mover_zips, mover_read_bilheteria, mover_read_distribuidoras, mover_salas_exibicao ] >> end
 
 cinema2026()
