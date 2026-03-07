@@ -14,7 +14,7 @@ x-airflow-common:
     AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
     AIRFLOW__CORE__FERNET_KEY: ''
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
-    AIRFLOW__CORE__LOAD_EXAMPLES: 'true'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__CORE__EXECUTION_API_SERVER_URL: 'http://airflow-apiserver:8080/execution/'
 
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
@@ -37,34 +37,31 @@ x-airflow-common:
 
 services:
 
-  spark-master:
-    image: docker.io/bitnami/spark:3.4.1
-    container_name: spark-master
-    environment:
-      - SPARK_MODE=master
-    ports:
-      - "7077:7077"
-      - "8081:8080"
+  # spark-master:
+  #   image: docker.io/bitnami/spark:3.5.1
+  #   container_name: spark-master
+  #   environment:
+  #     - SPARK_MODE=master
+  #   ports:
+  #     - "7077:7077"
+  #     - "8081:8080"
 
-  spark-worker:
-    image: docker.io/bitnami/spark:3.4.1
-    container_name: spark-worker
-    environment:
-      - SPARK_MODE=worker
-      - SPARK_MASTER_URL=spark://spark-master:7077
-      - SPARK_WORKER_MEMORY=6G
-      - SPARK_WORKER_CORES=4
-    depends_on:
-      - spark-master
-
-
-
-    deploy:
-      resources:
-        limits:
-          memory: 8g
-        reservations:
-          memory: 4g
+  # spark-worker:
+  #   image: docker.io/bitnami/spark:3.5.1
+  #   container_name: spark-worker
+  #   environment:
+  #     - SPARK_MODE=worker
+  #     - SPARK_MASTER_URL=spark://spark-master:7077
+  #     - SPARK_WORKER_MEMORY=6G
+  #     - SPARK_WORKER_CORES=4
+  #   depends_on:
+  #     - spark-master
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 8g
+  #       reservations:
+  #         memory: 4g
   postgres:
     image: postgres:16
     environment:
