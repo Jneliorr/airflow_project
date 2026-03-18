@@ -5,3 +5,7 @@ docker exec -it airflow_nelio-airflow-worker-1 mv //opt/airflow/cinema //opt/air
 $ docker exec -it airflow_nelio-airflow-worker-1 rm -rf //opt/airflow/cinema
 
 docker exec -it airflow_nelio-airflow-worker-1 dbt debug --project-dir //opt/airflow/dbt/cinema --profiles-dir //opt/airflow/dbt
+
+
+
+docker exec -it airflow_nelio-airflow-worker-1 dbt run --project-dir //opt/airflow/dbt/cinema --profiles-dir //opt/airflow/dbt

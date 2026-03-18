@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: tabelas        # Este é o primeiro nome no seu código
+    database: cinema_RR # Nome do seu banco de dados
+    schema: public      # Nome do esquema no Postgres
+    tables:
+      - name: filmes    # Este é o segundo nome no seu código
+      - name: bilheteria
+      - name: cinemas
