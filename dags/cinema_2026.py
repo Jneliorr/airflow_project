@@ -111,67 +111,145 @@ def cinema2026():
     def read_bilheteria(caminho_arquivo,anos,estados, row, caminho_saida): 
         engine = create_engine(f"postgresql+psycopg2://postgres:nelio@172.20.0.3:5432/cinema_RR")
         dataframe = []
+        colunas_datas = ['DATA_EXIBICAO', 'SESSAO']
+        colunas_inteiros = ['PUBLICO']
         for arquivo in os.listdir(caminho_arquivo):
-            if arquivo.endswith('.csv') and anos:
-                ano_encontrado = anos in arquivo
-                if anos == 'TODOS' or ano_encontrado:
+            if arquivo.endswith('.csv') and anos == "" or str(anos) in arquivo:
+                # ano_encontrado = anos in arquivo
+                # if anos == 'TODOS' or ano_encontrado:
                     caminho_completo = os.path.join(caminho_arquivo, arquivo)
-                    print(f"lendo: {caminho_completo}")
+                    print(f"Processando arquivo: {caminho_completo}")
                     df = pd.read_csv(caminho_completo, delimiter=';', dtype=str)
                     df['NOME_ARQUIVO'] = arquivo
+                    
                     dataframe.append(df)
-                    print(f"lido: {caminho_completo}")
-        df_final = pd.concat(dataframe, ignore_index=True)
-        print("passou concat")
-        if estados and estados != "TODOS":
-            df_final = df_final[df_final['UF_SALA_COMPLEXO'] == estados]
-        df_final['TITULO_FILME'] = df_final.apply(lambda row: row['TITULO_BRASIL'] 
+        df_bilheteria = pd.concat(dataframe, ignore_index=True)
+        if estados:
+            df_bilheteria = df_bilheteria[df_bilheteria['UF_SALA_COMPLEXO'] == estados]
+        df_bilheteria['TITULO_FILME'] = df_bilheteria.apply(lambda row: row['TITULO_BRASIL'] 
                                                 if pd.notnull(row['TITULO_BRASIL'])
                                                 else row['TITULO_ORIGINAL'], axis=1)
-        df_final.insert(1, 'TITULO_FILME', df_final.pop('TITULO_FILME'))
-        df_bilheteria = df_final[df_final['REGISTRO_SALA'].notnull()]
+        df_bilheteria.insert(1, 'TITULO_FILME', df_bilheteria.pop('TITULO_FILME'))
+        df_bilheteria = df_bilheteria[df_bilheteria['REGISTRO_SALA'].notnull()]
+        for coluna in colunas_datas:
+            df_bilheteria[coluna] = pd.to_datetime(df_bilheteria[coluna], errors='coerce', dayfirst=True)
+        for coluna in colunas_inteiros:
+            df_bilheteria[coluna] = pd.to_numeric(df_bilheteria[coluna], errors='coerce').fillna(0).astype(int)
+        df_bilheteria.columns = [col.lower() for col in df_bilheteria.columns]
         nome_arquivo_saida = os.path.join(caminho_saida, "bilheteria_diaria_tratada.csv")
         df_bilheteria.to_csv(nome_arquivo_saida, sep=';', index=False, encoding='utf-8')
         df_bilheteria.to_sql("bilheteria", engine, index=False, if_exists='append')
-        return df_bilheteria
+        print(f"Salvo com sucesso em: {nome_arquivo_saida}")
+        # dataframe = []
+        # for arquivo in os.listdir(caminho_arquivo):
+        #     if arquivo.endswith('.csv') and anos:
+        #         ano_encontrado = anos in arquivo
+        #         if anos == 'TODOS' or ano_encontrado:
+        #             caminho_completo = os.path.join(caminho_arquivo, arquivo)
+        #             print(f"lendo: {caminho_completo}")
+        #             df = pd.read_csv(caminho_completo, delimiter=';', dtype=str)
+        #             df['NOME_ARQUIVO'] = arquivo
+        #             dataframe.append(df)
+        #             print(f"lido: {caminho_completo}")
+        # df_final = pd.concat(dataframe, ignore_index=True)
+        # print("passou concat")
+        # if estados and estados != "TODOS":
+        #     df_final = df_final[df_final['UF_SALA_COMPLEXO'] == estados]
+        # df_final['TITULO_FILME'] = df_final.apply(lambda row: row['TITULO_BRASIL'] 
+        #                                         if pd.notnull(row['TITULO_BRASIL'])
+        #                                         else row['TITULO_ORIGINAL'], axis=1)
+        # df_final.insert(1, 'TITULO_FILME', df_final.pop('TITULO_FILME'))
+        # df_bilheteria = df_final[df_final['REGISTRO_SALA'].notnull()]
+        # nome_arquivo_saida = os.path.join(caminho_saida, "bilheteria_diaria_tratada.csv")
+        # df_bilheteria.to_csv(nome_arquivo_saida, sep=';', index=False, encoding='utf-8')
+        # df_bilheteria.to_sql("bilheteria", engine, index=False, if_exists='append')
+        # return df_bilheteria
         
 
 
     @task
     def d_cinemas_salas(caminho, caminho_saida, estados):
         engine = create_engine(f"postgresql+psycopg2://postgres:nelio@172.20.0.3:5432/cinema_RR")
+        colunas_datas = ['DATA_SITUACAO_SALA', 'DATA_INICIO_FUNCIONAMENTO_SALA', 'DATA_SITUACAO_COMPLEXO']
+        colunas_inteiros = ['ASSENTOS_SALA','ASSENTOS_CADEIRANTES','ASSENTOS_MOBILIDADE_REDUZIDA','ASSENTOS_OBESIDADE','ACESSO_ASSENTOS_COM_RAMPA']
         df_sala = pd.read_csv(caminho, delimiter=';', dtype=str)
         if estados:
             df_sala = df_sala[df_sala['UF_COMPLEXO'] == estados]
-        # df_sala = df_sala[df_sala['UF_COMPLEXO'] == estados]
+        for coluna in colunas_datas:
+            df_sala[coluna] = pd.to_datetime(df_sala[coluna], errors='coerce', dayfirst=True)
+        for coluna in colunas_inteiros:
+            df_sala[coluna] = pd.to_numeric(df_sala[coluna], errors='coerce').fillna(0).astype(int)
+        df_sala.columns = [col.lower() for col in df_sala.columns]
         nome_arquivo_saida = os.path.join(caminho_saida, "d_cinema.csv")
         df_sala.to_csv(nome_arquivo_saida, sep=';', index=False, encoding='utf-8')
-        print(f"d_cinemas salvo com sucesso em: {nome_arquivo_saida}")
         df_sala.to_sql("salas", engine, index=False, if_exists='replace')
+        print(f"d_cinemas salvo com sucesso em: {nome_arquivo_saida}")
         return df_sala
+
+        # df_sala = pd.read_csv(caminho, delimiter=';', dtype=str)
+        # if estados:
+        #     df_sala = df_sala[df_sala['UF_COMPLEXO'] == estados]
+        # # df_sala = df_sala[df_sala['UF_COMPLEXO'] == estados]
+        # nome_arquivo_saida = os.path.join(caminho_saida, "d_cinema.csv")
+        # df_sala.to_csv(nome_arquivo_saida, sep=';', index=False, encoding='utf-8')
+        # print(f"d_cinemas salvo com sucesso em: {nome_arquivo_saida}")
+        # df_sala.to_sql("salas", engine, index=False, if_exists='replace')
+        # return df_sala
 
     @task
     def d_filmes(caminho, colunas,caminho_saida):
         engine = create_engine(f"postgresql+psycopg2://postgres:nelio@172.20.0.3:5432/cinema_RR")
         df_filmes = pd.read_csv(caminho, delimiter=';',dtype=str, usecols=colunas)
-        df_filmes = df_filmes.drop_duplicates(subset=['CPB_ROE'])
+        df_filmes = df_filmes.drop_duplicates(subset=['cpb_roe'])
+        df_filmes['nacionalidade'] = np.where(df_filmes['pais_obra'] == 'BRASIL', 'Brasileiro', 'Internacional')
+
         nome_arquivo_saida = os.path.join(caminho_saida, "d_filmes.csv")
         df_filmes.to_csv(nome_arquivo_saida, sep=';',index=False, encoding='utf-8')
         print(f"d_filmes salvo com sucesso em: {nome_arquivo_saida}")
-        df_filmes.to_sql("filmes", engine, index=False, if_exists='replace')
-        return df_filmes
+        return df_filmes   
+        # df_filmes = pd.read_csv(caminho, delimiter=';',dtype=str, usecols=colunas)
+        # df_filmes = df_filmes.drop_duplicates(subset=['CPB_ROE'])
+        # nome_arquivo_saida = os.path.join(caminho_saida, "d_filmes.csv")
+        # df_filmes.to_csv(nome_arquivo_saida, sep=';',index=False, encoding='utf-8')
+        # print(f"d_filmes salvo com sucesso em: {nome_arquivo_saida}")
+        # df_filmes.to_sql("filmes", engine, index=False, if_exists='replace')
+        # return df_filmes
 
     @task
     def lancamentos (caminhodist,caminho_saida ):
         engine = create_engine(f"postgresql+psycopg2://postgres:nelio@172.20.0.3:5432/cinema_RR")
+        colunas_datas = ['data_lancamento_obra']
+        colunas_inteiros = ['publico_total']
+        colunas_moeda = ['renda_total']
+
         df_lancamento = pd.read_csv(caminhodist, delimiter=';',dtype=str)
         df_lancamento['PAIS_OBRA'] = np.where(df_lancamento['PAIS_OBRA'] == 'BRASIL', 'NACIONAL', 'ESTRANGEIRO')
+        df_lancamento['nacionalidade'] = np.where(df_lancamento['PAIS_OBRA'] == 'BRASIL', 'Brasileiro', 'Internacional')
+        df_lancamento.columns = [col.lower() for col in df_lancamento.columns]
+        for coluna in colunas_datas:
+            df_lancamento[coluna] = pd.to_datetime(df_lancamento[coluna], errors='coerce', dayfirst=True)
+        for coluna in colunas_inteiros:
+            df_lancamento[coluna] = pd.to_numeric(df_lancamento[coluna], errors='coerce').fillna(0).astype(int)
+        for coluna in colunas_moeda:
+            df_lancamento[coluna] = (
+                df_lancamento[coluna]
+                .str.replace("R$", "", regex=False)   # remove símbolo de moeda
+                .str.replace(".", "", regex=False)    # remove separador de milhar
+                .str.replace(",", ".", regex=False)   # troca vírgula por ponto decimal
+                .astype(float)                        # converte para float
+            )
         nome_arquivo_saida = os.path.join(caminho_saida, "lancamentos.csv")
         df_lancamento.to_csv(nome_arquivo_saida, sep=';',index=False, encoding='utf-8')
-        print(engine)
-        df_lancamento.to_sql("lancamentos", engine, index=False, if_exists='replace')
-        print(f"lancamentos salvo com sucesso em: {nome_arquivo_saida}")
-        return 
+        return df_lancamento
+        # engine = create_engine(f"postgresql+psycopg2://postgres:nelio@172.20.0.3:5432/cinema_RR")
+        # df_lancamento = pd.read_csv(caminhodist, delimiter=';',dtype=str)
+        # df_lancamento['PAIS_OBRA'] = np.where(df_lancamento['PAIS_OBRA'] == 'BRASIL', 'NACIONAL', 'ESTRANGEIRO')
+        # nome_arquivo_saida = os.path.join(caminho_saida, "lancamentos.csv")
+        # df_lancamento.to_csv(nome_arquivo_saida, sep=';',index=False, encoding='utf-8')
+        # print(engine)
+        # df_lancamento.to_sql("lancamentos", engine, index=False, if_exists='replace')
+        # print(f"lancamentos salvo com sucesso em: {nome_arquivo_saida}")
+        # return 
 
     # @task
     # def upload_to_postgres(df, table_name, database, user, password):
