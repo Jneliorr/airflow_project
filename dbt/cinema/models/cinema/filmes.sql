@@ -1,6 +1,8 @@
 WITH raw_data AS (
 
-    SELECT * FROM publi.filmes
+    SELECT  * FROM public.filmes
+    
+    limit 2
 
 )
 SELECT 
