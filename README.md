@@ -20,6 +20,7 @@ Este repositório contém o pipeline completo: desde a ingestão via API/Request
 ## 🛠️ Arquitetura da Solução
 A "mágica" por trás dos panos utiliza uma stack moderna de Data Ops:
 
+
 1.  **Orquestração:** `Apache Airflow` rodando em containers Docker.
 2.  **Ingestão:** Scripts `Python` que realizam o download, unzip e limpeza inicial (tipagem e tratamento de nulos).
 3.  **Storage:** Armazenamento em banco de dados `PostgreSQL`.
