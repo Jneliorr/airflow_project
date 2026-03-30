@@ -1,0 +1,11 @@
+docker exec -it airflow_nelio-airflow-worker-1 dbt init cinema --project-dir //opt/airflow/dbt/cinema
+
+docker exec -it airflow_nelio-airflow-worker-1 mv //opt/airflow/cinema //opt/airflow/dbt/
+
+$ docker exec -it airflow_nelio-airflow-worker-1 rm -rf //opt/airflow/cinema
+
+docker exec -it airflow_nelio-airflow-worker-1 dbt debug --project-dir //opt/airflow/dbt/cinema --profiles-dir //opt/airflow/dbt
+
+
+
+docker exec -it airflow_nelio-airflow-worker-1 dbt run --project-dir //opt/airflow/dbt/cinema --profiles-dir //opt/airflow/dbt

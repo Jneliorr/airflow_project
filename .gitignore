@@ -3,4 +3,4 @@ logs/
 dags/dags_Dev
 .env
 *.docs
-docs/
+# docs/
