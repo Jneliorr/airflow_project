@@ -100,34 +100,51 @@ def eleicao():
     @task
     def local_votacao (path):
         engine = create_engine(f"postgresql+psycopg2://{USER}:{PASSWORD}@db:5432/eleicao_RR")
+        colunas_leitura = [
+        'dt_geracao', 'hh_geracao', 'aa_eleicao', 'dt_eleicao', 'ds_eleicao',
+        'nr_turno', 'sg_uf', 'cd_municipio', 'nm_municipio', 'nr_zona',
+        'nr_secao', 'cd_tipo_secao_agregada', 'ds_tipo_secao_agregada',
+        'nr_secao_principal', 'nr_local_votacao', 'nm_local_votacao',
+        'cd_tipo_local', 'ds_tipo_local', 'ds_endereco', 'nm_bairro', 'nr_cep',
+        'nr_telefone_local', 'nr_latitude', 'nr_longitude',
+        'cd_situ_local_votacao', 'ds_situ_local_votacao', 'cd_situ_zona',
+        'ds_situ_zona', 'cd_situ_secao', 'ds_situ_secao', 'cd_situ_localidade',
+        'ds_situ_localidade', 'cd_situ_secao_acessibilidade',
+        'ds_situ_secao_acessibilidade', 'qt_eleitor_secao',
+        'qt_eleitor_eleicao_federal', 'qt_eleitor_eleicao_estadual',
+        'qt_eleitor_eleicao_municipal', 'nr_local_votacao_original',
+        'nm_local_votacao_original', 'ds_endereco_locvt_original',
+        'id_zona_secao_municipio'
+        ]
         dfs = []
-        colunas_num = ['QT_ELEITOR_SECAO', 'QT_ELEITOR_ELEICAO_FEDERAL', 'QT_ELEITOR_ELEICAO_ESTADUAL','QT_ELEITOR_ELEICAO_MUNICIPAL']
-        colunas_data = ['DT_GERACAO','DT_ELEICAO',]
-        colunas_hora = ['HH_GERACAO']
+        colunas_num = ['qt_eleitor_secao', 'qt_eleitor_eleicao_federal', 'qt_eleitor_eleicao_estadual','qt_eleitor_eleicao_municipal']
+        colunas_data = ['dt_geracao','dt_eleicao']
+        colunas_hora = ['hh_geracao']
         for bweb in os.listdir(path):
             full_path = os.path.join(path, bweb)
             if full_path.endswith('.csv'):
                 print(f"Lendo o arquivo: {full_path}")
-                df = pd.read_csv(full_path, encoding='latin-1', sep=';',dtype=str,nrows=10)
+                df = pd.read_csv(full_path, encoding='latin-1', sep=';',dtype=str,usecols=lambda col: col.strip().lower() in colunas_leitura, nrows=10)
+                df.columns = [col.strip().lower() for col in df.columns]
                 for col in colunas_num:
                     if col in df.columns:
                         df[col] = pd.to_numeric(df[col]).astype('Int64')
                 for col in colunas_data:
                     if col in df.columns:
-                        df[col] = pd.to_datetime(df[col],  dayfirst=True, format='%d/%m/%Y').dt.date
+                        df[col] = pd.to_datetime(df[col], dayfirst=True, format='%d/%m/%Y', errors='coerce').dt.date
                 for col in colunas_hora:
                     if col in df.columns:
-                        df[col] = pd.to_datetime(df[col]).dt.time
-                df['AA_ELEICAO'] = df['AA_ELEICAO'].astype(str).str.lstrip("0")
-                df['ID_ZONA_SECAO_MUNICIPIO'] = df['AA_ELEICAO'] +  df['NR_TURNO'] + df['NR_ZONA'] +  df['NR_SECAO'] +  df['CD_MUNICIPIO']
+                        df[col] = pd.to_datetime(df[col], format='%H:%M:%S', errors='coerce').dt.time
+                df['aa_eleicao'] = df['aa_eleicao'].astype(str).str.lstrip("0")
+                df['id_zona_secao_municipio'] = df['aa_eleicao'] +  df['nr_turno'] + df['nr_zona'] +  df['nr_secao'] +  df['cd_municipio']
+                df.to_sql("perfil_eleitorado", engine, index=False, if_exists='append')
+
                 dfs.append(df)
-                df.columns = [col.lower() for col in df.columns]
-                print(f"Carregando o arquivo no banco de archives: {bweb}")
-                df.to_sql("local_votacao", engine, index=False, if_exists='append')
-                print(f"Arquivo Carregado no Bando de archives: {bweb}")
 
 
-        return print("Todos os arquivos foram processados e carregados no banco de archives com sucesso!")
+
+
+            return print("Todos os arquivos foram processados e carregados no banco de archives com sucesso!")
 
     @task
     def perfil (file_csv):
