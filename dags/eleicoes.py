@@ -245,6 +245,8 @@ def eleicao():
                 print(f"Arquivo Carregado no Bando de archives: {bweb}")
 
         return print("Todos os arquivos foram processados e carregados no banco de archives com sucesso!")
+    
+    
     @task
     def unzip_candidato(zip_path, file_save):
         os.makedirs(file_save, exist_ok=True)
