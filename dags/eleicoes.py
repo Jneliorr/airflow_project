@@ -141,9 +141,6 @@ def eleicao():
 
                 dfs.append(df)
 
-
-
-
             return print("Todos os arquivos foram processados e carregados no banco de archives com sucesso!")
 
     @task
