@@ -38,14 +38,7 @@ params = {
         Escolher usuario 
         """
         )
-    # ,'anos': Param(
-    #         default='2026-02'
-    #         ,type="string"
-    #         ,description="Escolher ano ou Todos: 2026 ou 2026-02 ou TODOS")
-    # ,'estados': Param(
-    #         default='RR'
-    #         ,type="string"
-    #         ,description="Estado Filtrado")
+
     ,'database': Param(
         default='eleicao_RR'
         ,type="string"
@@ -53,14 +46,15 @@ params = {
 
     }
 
-# Configuração de onde o dbt está no seu Docker/Worker
+# Configuração de onde o dbt 
+
 DBT_PROJECT_PATH = Path("/opt/airflow/dbt/eleicao")
 
 profile_config = ProfileConfig(
     profile_name="eleicao",
     target_name="dev",
     profile_mapping=PostgresUserPasswordProfileMapping(
-        conn_id="postgres_default", # O ID da conexão que você cria no Airflow UI
+        conn_id="postgres_default", # O ID da conexão 
         profile_args={"schema": "public"},
     ),
 )
@@ -141,7 +135,6 @@ def eleicao():
         dfs = []
         colunas_num = ['QT_ELEITORES_INC_NM_SOCIAL', 'QT_ELEITORES_DEFICIENCIA', 'QT_ELEITORES_BIOMETRIA','QT_ELEITORES_PERFIL']
         colunas_data = ['DT_GERACAO']
-        # colunas_dataHora = ['DT_BU_RECEBIDO','DT_CARGA_URNA_EFETIVADA','DT_ABERTURA','DT_ENCERRAMENTO','DT_EMISSAO_BU']
         colunas_hora = ['HH_GERACAO']
         for bweb in os.listdir(file_csv):
             full_path = os.path.join(file_csv, bweb)
@@ -252,14 +245,14 @@ def eleicao():
         secret_key = '9eb9f6eac22bb9a13a90f36ab18092e455fef1ead93ec303fe94c0bf2ae90e42'
         bucket_name = 'tre'
         folder_local = os.getenv('CANDIDATO_FOTOS_DIR', '/opt/airflow/TRE2026/archives/RR/candidato/jpg')
-        folder_remote = 'fotosrr/'                # Pasta no Bucket
+        folder_remote = 'fotosrr/'               
 
         s3 = boto3.client(
         service_name='s3',
         endpoint_url=f'https://{account_id}.r2.cloudflarestorage.com',
         aws_access_key_id=access_key,
         aws_secret_access_key=secret_key,
-        region_name='auto', # R2 usa 'auto'
+        region_name='auto', 
         config=Config(signature_version='s3v4')
         )
         base_url = "https://pub-e9ede5cdf96443d58340a9a3b62a2816.r2.dev/fotosrr/" 
@@ -282,12 +275,8 @@ def eleicao():
                     .str.replace(r'[^A-Za-z0-9]+', '', regex=True)
                 )
                 df['ID_CANDIDATO'] = df['ANO_ELEICAO'] + df['NR_TURNO'] +  df['CD_CARGO'] + df['SG_UE'] +  df['NR_CANDIDATO'] + df['NM_CANDIDATO']
-                # df.drop_duplicates(['ID_CANDIDATO'], inplace=True)
                 dfs.append(df)
 
-        # if not dfs:
-        #     print("Nenhum arquivo válido encontrado para processamento.")
-        #     return None
 
         dfconsulta = pd.concat(dfs, ignore_index=True)
 
@@ -297,7 +286,6 @@ def eleicao():
                     "Nome_Foto": file,
                     "URL_Foto": base_url + file
                 })
-        # Salva um CSV para importar no Power BI
         fotos = pd.DataFrame(lista_links)
         fotos['idCandidatos'] = fotos['Nome_Foto'].str[2:14]
 
@@ -381,7 +369,7 @@ def eleicao():
     bash_command=f'mv /opt/airflow/TRE2026/archives/RR/candidato/zip-fotos/*.zip /opt/airflow/TRE2026/archives/RR/candidato/processados-jpg/'
     )
 
-#     dbt_cinema = DbtTaskGroup(
+#     dbt_eleicao= DbtTaskGroup(
 #             group_id="camada_transformacao_dbt",
 #             project_config=ProjectConfig(DBT_PROJECT_PATH),
 #             profile_config=profile_config,
